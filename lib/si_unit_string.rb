@@ -1,8 +1,10 @@
 require_relative './conversions.rb'
 require_relative './modules/no_parenthesis_module.rb'
+require_relative './modules/parenthesis_module.rb'
 
 class SIUnitString
   include NoParenthesisModule
+  include ParenthesisModule
   attr_reader :string, :factor
 
   def initialize(string)
@@ -11,7 +13,7 @@ class SIUnitString
 
   def parse
     if needs_complex_structure?
-      @result_object = parse_complex_string
+      parse_complex_string
     else
       @result_object = parse_simple_string
     end
@@ -27,87 +29,32 @@ class SIUnitString
     @operator_objects = []
     find_operators_and_parenthesis
 
-    result = {factor: 1.0, units_array: [], operator_start_idx: 0}
-    string_start_idx = 0
+    @result_object = {factor: 1.0, units_array: [], operator_start_idx: 0}
+    string_idx = 0
 
-    until result[:operator_start_idx] >= @operator_objects.length do
-      current_operator = @operator_objects[result[:operator_start_idx]]
+    @operator_objects.each_with_index do |operator_obj, operator_idx|
+      if operator_obj.class == ParenthesisGroup
+        operator_obj.process_children(@string)
 
-      if current_operator[:type] == :parenthese
-        # Handle empty parenthesis
-        if current_operator[:close_idx] == current_operator[:open_idx] + 1
-          result[:units_array].concat(["(", ")"])
-          result[:operator_start_idx] += 1
-        else
-          result[:units_array] << "("
-          # if (result[:operator_start_idx] += 1) < @operator_objects.length
-          subresult = parse_parenthesis_group(result[:operator_start_idx] += 1)
-          add_subresult(result, subresult)
-          # end
-          result[:units_array] << ")"
-        end
-
-        string_start_idx = current_operator[:close_idx] + 1
+        add_subresult(operator_obj.result)
+        string_idx = operator_obj.close_idx + 1
       else
-        si_unit = @string[string_start_idx..current_operator[:idx]-1]
+        si_unit = @string[string_idx..operator_obj[:idx]-1]
         si_unit_counterpart = SI_UNIT_COUNTERPARTS[si_unit]
-        add_si_unit_counterpart(result, si_unit_counterpart, current_operator)
+        add_si_unit_counterpart(@result_object, si_unit_counterpart, operator_obj)
 
-        string_start_idx = current_operator[:idx] + 1
-        result[:operator_start_idx] += 1
+        string_idx = operator_obj[:idx] + 1
       end
-
-      result[:last_operator] = current_operator[:operator]
     end
 
-    result
+    add_final_unit(string_idx)
   end
 
-  def parse_parenthesis_group(operator_start_idx)
-    parenthesis_object = @operator_objects[operator_start_idx]
-    return {
-      factor: 1.0,
-      units_array: ['()'],
-      operator_start_idx: operator_start_idx + 1
-    } if parenthesis_object[:close_idx] == parenthesis_object[:open_idx] + 1
+  def add_final_unit(string_idx)
+    si_unit = @string[string_idx..@string.length-1]
+    si_unit_counterpart = SI_UNIT_COUNTERPARTS[si_unit]
 
-    stop_idx = parenthesis_object[:close_idx]
-    result = {factor: 1.0, units_array: ['('], operator_start_idx: operator_start_idx + 1}
-
-    string_start_idx = parenthesis_object[:open_idx] + 1
-    current_operator = @operator_objects[result[:operator_start_idx]]
-
-    while operator_in_range(current_operator, stop_idx) do
-      # if current operator is a * or / operator
-      if current_operator[:type] == :operator
-        si_unit = @string[string_start_idx..current_operator[:idx]-1]
-        si_unit_counterpart = SI_UNIT_COUNTERPARTS[si_unit]
-
-        add_si_unit_counterpart(result, si_unit_counterpart, current_operator)
-        result[:last_operator] = current_operator[:operator]
-        string_start_idx = operator_obj[:idx] + 1
-        result[:operator_start_idx] += 1
-      # if current operator is a parenthesis
-      elsif current_operator[:type] == :parenthese
-        subresult = parse_parenthesis_group(result[:operator_start_idx])
-
-        # handles updating result[:operator_start_idx] and result[:units_array]
-        add_subresult(result, subresult)
-        string_start_idx = current_operator[:close_idx] + 1
-      end
-
-      current_operator = @operator_objects[result[:operator_start_idx]]
-    end
-
-    result[:units_array] << ')'
-    result
-  end
-
-  def operator_in_range(operator, stop_idx)
-    return false if operator.nil?
-
-    (operator[:idx] && operator[:idx] < stop_idx) ||
-      (operator[:open_idx] && operator[:open_idx] < stop_idx)
+    add_si_unit_counterpart(@result_object, si_unit_counterpart)
   end
 
   # Inputs:
@@ -130,38 +77,20 @@ class SIUnitString
   end
 
   # Adds a subresult (parenthese group) to the main result.
-  def add_subresult(result, subresult)
-    if result[:last_operator].nil? || result[:last_operator] == "*"
-      result[:factor] *= subresult[:factor]
+  def add_subresult(subresult)
+    if @result_object[:units_array].last.nil? || ["*", "(", ")"].include?(@result_object[:units_array].last)
+      @result_object[:factor] *= subresult[:factor]
     else
-      result[:factor] /= subresult[:factor]
+      @result_object[:factor] /= subresult[:factor]
     end
 
-    result[:units_array].concat(subresult[:units_array])
-    result[:operator_start_idx] = subresult[:operator_start_idx]
+    @result_object[:units_array].concat(subresult[:units_array])
+    @result_object[:operator_start_idx] = subresult[:operator_start_idx]
   end
 
   private
   def needs_complex_structure?
     @string.match('\(') ? true : false
   end
-
-  def find_operators_and_parenthesis
-    parenthesis_arr= []
-
-    @string.each_char.with_index do |char, idx|
-      @operator_objects << {idx: idx, operator: char, type: :operator} if char == "*" || char == "/"
-      if char == "("
-        parenthesis_obj = {type: :parenthese, open_idx: idx}
-        @operator_objects << parenthesis_obj
-        parenthesis_arr<< parenthesis_obj
-      elsif char == ")"
-        parenthesis_obj = parenthesis_arr.pop
-        parenthesis_obj[:close_idx] = idx
-      end
-    end
-  end
-
-
 
 end

@@ -74,12 +74,12 @@ describe "SIUnitString" do
           expect(SIUnitString.new('((()))').parse).to eq({unit_name: '((()))', multiplication_factor: 1.0})
         end
 
-        # it "can parse a unitless string with multiple sets of parenthesis" do
-        #   expect(SIUnitString.new('(()())').parse).to eq({unit_name: '(()())', multiplication_factor: 1.0})
-        #   expect(SIUnitString.new('(()()())').parse).to eq({unit_name: '(()()())', multiplication_factor: 1.0})
-        #   expect(SIUnitString.new('(()()())').parse).to eq({unit_name: '(()()())', multiplication_factor: 1.0})
-        #   expect(SIUnitString.new('(())(()())').parse).to eq({unit_name: '(())(()())', multiplication_factor: 1.0})
-        # end
+        it "can parse a unitless string with multiple sets of parenthesis" do
+          expect(SIUnitString.new('(()())').parse).to eq({unit_name: '(()())', multiplication_factor: 1.0})
+          expect(SIUnitString.new('(()()())').parse).to eq({unit_name: '(()()())', multiplication_factor: 1.0})
+          expect(SIUnitString.new('(()()())').parse).to eq({unit_name: '(()()())', multiplication_factor: 1.0})
+          expect(SIUnitString.new('(())(()())').parse).to eq({unit_name: '(())(()())', multiplication_factor: 1.0})
+        end
       end
 
       context "unit strings with units and parenthesis" do
