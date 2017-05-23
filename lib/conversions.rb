@@ -1,0 +1,19 @@
+SI_UNIT_COUNTERPARTS = {
+  "minute" => { unit: "s", factor: 60 },
+  "min" => { unit: "s", factor: 60 },
+  "hour" => { unit: "s", factor: 3600 },
+  "h" => { unit: "s", factor: 3600 },
+  "day" => { unit: "s", factor: 86400 },
+  "d" => { unit: "s", factor: 86400 },
+  "degree" => { unit: "rad", factor: Math::PI/180 },
+  "°" => { unit: "rad", factor: Math::PI/180 },
+  "'" => { unit: "rad", factor: Math::PI/10800 },
+  "second" => { unit: "rad", factor: Math::PI/648000 },
+  "\"" => { unit: "rad", factor: Math::PI/648000 },
+  "hectare" => { unit: "m^2", factor: 10000 },
+  "ha" => { unit: "m^2", factor: 10000 },
+  "litre" => { unit: "m^3", factor: 0.001 },
+  "L" => { unit: "m^3", factor: 0.001 },
+  "tonne" => { unit: "kg", factor: 10**3 },
+  "t" => { unit: "kg", factor: 10**3 }
+}
