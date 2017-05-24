@@ -59,13 +59,15 @@ class ParenthesisGroup
   # => child_idx: integer representing the index of the subresult child in the
   #               @children array.
   def process_operation(si_unit_counterpart, child_idx, last = false)
-    if should_be_multiplied?
-      @result[:factor] *= si_unit_counterpart[:factor]
-    else
-      @result[:factor] /= si_unit_counterpart[:factor]
-    end
+    if si_unit_counterpart
+      if should_be_multiplied?
+        @result[:factor] *= si_unit_counterpart[:factor]
+      else
+        @result[:factor] /= si_unit_counterpart[:factor]
+      end
 
-    @result[:units_array] << si_unit_counterpart[:unit]
+      @result[:units_array] << si_unit_counterpart[:unit]
+    end
     child = @children[child_idx]
     @result[:units_array] << child[:operator] unless child.nil? || last
   end

@@ -19,6 +19,10 @@ describe "SIUnitString" do
       let(:string3) { SIUnitString.new("degree*ha/minute") }
       let(:string4) { SIUnitString.new("degree * ha / minute / ° / ° * \' * \"") }
 
+      it "can parse a blank string" do
+        expect(SIUnitString.new('').parse).to eq({unit_name: '', multiplication_factor: 1.0})
+      end
+
       it "can parse a string with one unit" do
         expect(string1.parse).to eq({
           unit_name: "rad",
@@ -52,11 +56,6 @@ describe "SIUnitString" do
     end
 
     describe "unit strings with parenthesis" do
-      let(:string1) { SIUnitString.new("(degree)") }
-      let(:string2) { SIUnitString.new("(degree/minute)") }
-      let(:string3) { SIUnitString.new("(degree*ha)/minute") }
-      let(:string4) { SIUnitString.new("(degree * ha) / (minute * ° * °) * (\' * \")") }
-
       context "unit strings with parenthesis only" do
         it "can parse a unitless string with one set of parenthesis" do
           expect(SIUnitString.new('()').parse).to eq({unit_name: '()', multiplication_factor: 1.0})
@@ -83,6 +82,12 @@ describe "SIUnitString" do
       end
 
       context "unit strings with units and parenthesis" do
+        let(:string1) { SIUnitString.new("(degree)") }
+        let(:string2) { SIUnitString.new("(degree/minute)") }
+        let(:string3) { SIUnitString.new("(degree*ha)/minute") }
+        let(:string4) { SIUnitString.new("(degree * ha) / (minute * ° * °) * (\' * \")") }
+        let(:string5) { SIUnitString.new("(degree * (ha)) / (((minute) * °) * °) * (((\' * \")))") }
+
         it "can parse a string with one unit" do
           expect(string1.parse).to eq({
             unit_name: "(rad)",
@@ -109,6 +114,16 @@ describe "SIUnitString" do
           expected_factor = (Math::PI/180*10000/60/(Math::PI/180)/(Math::PI/180)*(Math::PI/10800)*(Math::PI/648000)).round(14)
 
           expect(string4.parse).to eq({
+            unit_name: expected_units,
+            multiplication_factor: expected_factor
+          })
+        end
+
+        it "can parse a string with many units and nested parenthesis groupings" do
+          expected_units = "(rad*(m^2))/(((s)*rad)*rad)*(((rad*rad)))"
+          expected_factor = (Math::PI/180 * 10000/60/(Math::PI/180)/(Math::PI/180)*(Math::PI/10800)*(Math::PI/648000)).round(14)
+
+          expect(string5.parse).to eq({
             unit_name: expected_units,
             multiplication_factor: expected_factor
           })
