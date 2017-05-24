@@ -2,11 +2,6 @@ require 'rails_helper'
 require_relative '../../lib/si_unit_string'
 
 describe "SIUnitString" do
-  it "can instantiate a new class" do
-    si_unit_string = SIUnitString.new('abc')
-    expect(200).to eq(200)
-  end
-
   it "removes white space" do
     si_unit_string = SIUnitString.new(' a b c ')
     expect(si_unit_string.string).to eq('abc')
